@@ -1,1 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>京贊生機 點餐表單</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    h2 { margin-top: 2em; }
+    .item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+    button { padding: 4px 10px; margin: 0 2px; }
+    textarea { width: 100%; height: 80px; margin-top: 10px; }
+    .category { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+    .submit { margin-top: 20px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <h1>🥗 京贊生機 點餐表單</h1>
+  <div id="menu"></div>
 
+  <h2>備註</h2>
+  <textarea id="note" placeholder="例如：少冰、不要加辣..."></textarea>
+
+  <button class="submit" onclick="submitOrder()">✅ 送出訂單</button>
+
+  <script>
+    const MENU = {
+      "早餐類": ["蛋餅", "漢堡"],
+      "飲品類": ["鮮奶茶", "豆漿"],
+      "麵包類": ["奶油餐包", "可頌"],
+      "水果類": ["蘋果片", "香蕉"]
+    };
+
+    const order = {};
+    const menuDiv = document.getElementById("menu");
+
+    for (const [category, items] of Object.entries(MENU)) {
+      const catDiv = document.createElement("div");
+      catDiv.className = "category";
+      const catTitle = document.createElement("h2");
+      catTitle.textContent = category;
+      catDiv.appendChild(catTitle);
+
+      items.forEach(item => {
+        order[item] = 0;
+
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "item";
+        const label = document.createElement("span");
+        label.textContent = item;
+
+        const controls = document.createElement("div");
+        const minus = document.createElement("button");
+        minus.textContent = "-";
+        minus.onclick = () => { if (order[item] > 0) order[item]--; update(); };
+
+        const qty = document.createElement("span");
+        qty.id = `qty-${item}`;
+        qty.textContent = "0";
+
+        const plus = document.createElement("button");
+        plus.textContent = "+";
+        plus.onclick = () => { order[item]++; update(); };
+
+        controls.appendChild(minus);
+        controls.appendChild(qty);
+        controls.appendChild(plus);
+
+        itemDiv.appendChild(label);
+        itemDiv.appendChild(controls);
+        catDiv.appendChild(itemDiv);
+      });
+
+      menuDiv.appendChild(catDiv);
+    }
+
+    function update() {
+      for (const item in order) {
+        document.getElementById(`qty-${item}`).textContent = order[item];
+      }
+    }
+
+    function submitOrder() {
+      const selectedItems = {};
+      for (const item in order) {
+        if (order[item] > 0) selectedItems[item] = order[item];
+      }
+
+      if (Object.keys(selectedItems).length === 0) {
+        alert("請至少選擇一樣商品！");
+        return;
+      }
+
+      const note = document.getElementById("note").value;
+
+      const data = {
+        userId: "", // 若需串 LINE userId 可填入
+        items: selectedItems,
+        note
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycbzrM2F60JxNVMf_iD2Y8hMXVqgzBoL0x0f3w51X0-CCFScVF9gX-2XfVX4cKkqnQhMvoQ/exec", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.status === "success") {
+          alert("✅ 訂單已送出！");
+          window.location.reload();
+        } else {
+          alert("❌ 訂單失敗，請稍後再試");
+        }
+      });
+    }
+  </script>
+</body>
+</html>
